@@ -30,7 +30,7 @@
   --sign: #2A63AE; --signal: #F5CD2E; --up: #F07A70; --down: #5CC48A; color-scheme: dark;
 }
 *, *::before, *::after { box-sizing: inherit; }
-html { scroll-padding-top: env(safe-area-inset-top, 0px); }
+html { scroll-padding-top: env(safe-area-inset-top, 0px); scrollbar-gutter: stable; }
 body { margin: 0; background: var(--bg); color: var(--ink); font: 400 16px/1.5 var(--sans); }
 button { font: inherit; color: inherit; }
 :focus-visible { outline: 3px solid var(--signal); outline-offset: 2px; }
@@ -259,7 +259,7 @@ function drawChart(nowT) {
     }));
   }
   datasets = datasets.filter(d => d.data.length);
-  datasets.forEach(d => Object.assign(d, { stepped: 'before', pointRadius: 0, pointHitRadius: 6, tension: 0, fill: false }));
+  datasets.forEach(d => Object.assign(d, { stepped: 'before', pointRadius: c => c.dataIndex === c.dataset.data.length - 1 ? 3 : 0, pointBackgroundColor: d.borderColor, pointHitRadius: 6, tension: 0, fill: false }));
 
   const empty = !datasets.length;
   $('chartEmpty').hidden = !empty;
@@ -268,11 +268,16 @@ function drawChart(nowT) {
   if (empty || typeof Chart === 'undefined') return;
 
   const ink = css('--muted'), grid = css('--line');
+  // Achse erst dort beginnen, wo Daten vorhanden sind (mind. 6 Stunden Fenster)
+  const firstX = Math.min(...datasets.map(d => d.data[0].x));
+  const xMax = nowT * 1000;
+  const xMin = Math.min(Math.max(from * 1000, firstX), xMax - 6 * 3600 * 1000);
+  const shortSpan = xMax - xMin < 2 * DAY * 1000;
   const opts = {
     responsive: true, maintainAspectRatio: false, animation: false,
     interaction: { mode: 'nearest', axis: 'x', intersect: false },
     scales: {
-      x: { type: 'time', min: from ? from * 1000 : undefined, max: nowT * 1000, ticks: { color: ink, maxRotation: 0, autoSkipPadding: 16, callback: v => new Date(v).toLocaleDateString('de-AT', st.range && st.range <= 2 ? { hour: '2-digit', minute: '2-digit' } : { day: 'numeric', month: 'short' }) }, grid: { color: grid },
+      x: { type: 'time', min: xMin, max: xMax, ticks: { color: ink, maxRotation: 0, autoSkipPadding: 16, callback: v => shortSpan ? new Date(v).toLocaleTimeString('de-AT', { hour: '2-digit', minute: '2-digit' }) : new Date(v).toLocaleDateString('de-AT', { day: 'numeric', month: 'short' }) }, grid: { color: grid },
            time: { tooltipFormat: 'dd.MM.yyyy HH:mm', displayFormats: { hour: 'HH:mm', day: 'd. MMM', week: 'd. MMM', month: 'MMM yy' } } },
       y: { ticks: { color: ink, callback: v => fmt3(v) }, grid: { color: grid } }
     },
