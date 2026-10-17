@@ -71,13 +71,15 @@ h1 { font: 700 2rem/1 var(--cond); margin: 0; letter-spacing: .01em; }
 
 .panel { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; }
 .tablewrap { overflow-x: auto; }
-table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+table { width: 100%; table-layout: fixed; border-collapse: collapse; font-variant-numeric: tabular-nums; }
 th, td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
 th { font-size: .82rem; font-weight: 500; color: var(--muted); }
 tr:last-child td { border-bottom: 0; }
 td.num, th.num { text-align: right; white-space: nowrap; }
+col.dist { width: 7.5rem; } col.prc { width: 6rem; }
+@media (max-width: 480px) { col.dist { width: 5.5rem; } col.prc { width: 4.75rem; } th, td { padding: 10px 10px; } }
 td .sub { display: block; color: var(--muted); font-size: .85rem; }
-.price { font: 600 1.35rem/1 var(--cond); }
+.price { font: 600 1.35rem/1 var(--cond); font-variant-numeric: tabular-nums; }
 .price sup { font-size: .6em; }
 tbody tr { cursor: pointer; }
 tbody tr.more { cursor: default; }
@@ -112,6 +114,7 @@ footer a { color: inherit; }
     <section class="totem" aria-live="polite" id="totem"></section>
     <section class="panel tablewrap">
       <table>
+        <colgroup><col><col class="dist"><col class="prc"></colgroup>
         <thead><tr><th>Tankstelle</th><th class="num">Entfernung</th><th class="num">Preis</th></tr></thead>
         <tbody id="rows"></tbody>
       </table>
@@ -275,6 +278,7 @@ function drawChart(nowT) {
   const shortSpan = xMax - xMin < 2 * DAY * 1000;
   const opts = {
     responsive: true, maintainAspectRatio: false, animation: false,
+    layout: { padding: { top: 6, right: 8 } },
     interaction: { mode: 'nearest', axis: 'x', intersect: false },
     scales: {
       x: { type: 'time', min: xMin, max: xMax, ticks: { color: ink, maxRotation: 0, autoSkipPadding: 16, callback: v => shortSpan ? new Date(v).toLocaleTimeString('de-AT', { hour: '2-digit', minute: '2-digit' }) : new Date(v).toLocaleDateString('de-AT', { day: 'numeric', month: 'short' }) }, grid: { color: grid },
