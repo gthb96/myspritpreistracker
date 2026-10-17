@@ -144,7 +144,7 @@ const DAY = 86400;
 
 const st = {
   cfg: null, latest: null, stations: {}, manifest: { months: [] }, months: {},
-  fuel: null, loc: null, mode: 'places', range: 30, selected: null, liveCache: {}, liveBusy: {}, liveFailed: false, chart: null
+  fuel: null, loc: null, mode: 'places', range: 30, selected: null, liveCache: {}, liveBusy: {}, liveMsg: {}, liveFailed: false, chart: null
 };
 try { Object.assign(st, JSON.parse(localStorage.getItem('sprit-ui') || '{}')); } catch {}
 const saveUi = () => { try { localStorage.setItem('sprit-ui', JSON.stringify({ fuel: st.fuel, loc: st.loc, mode: st.mode, range: st.range })); } catch {} };
@@ -213,7 +213,7 @@ function render() {
         <div><dt>7 Tage hoch</dt><dd>${recent.length ? fmt3(Math.max(...recent)) : '–'}</dd></div>
       </dl>` : `<div class="digits">–</div><div class="where">Für diesen Ort liegen noch keine Preise vor.</div>`}
     <button type="button" class="live" id="liveBtn">Aktualisieren</button>
-    <div class="note" id="liveNote">${liveFor() ? 'Live von E-Control, ' + new Date(liveFor().t * 1000).toLocaleTimeString('de-AT', { hour: '2-digit', minute: '2-digit' }) + ' Uhr' : (st.liveBusy[`${st.loc}|${st.fuel}`] ? 'Hole aktuelle Preise …' : '')}</div>`;
+    <div class="note" id="liveNote">${liveFor() ? 'Live von E-Control, ' + new Date(liveFor().t * 1000).toLocaleTimeString('de-AT', { hour: '2-digit', minute: '2-digit' }) + ' Uhr' : (st.liveBusy[`${st.loc}|${st.fuel}`] ? 'Hole aktuelle Preise …' : st.liveMsg[`${st.loc}|${st.fuel}`] || '')}</div>`;
   $('liveBtn').onclick = () => fetchLive(true);
 
   $('rows').innerHTML = rows.length ? rows.map(r => `
@@ -312,9 +312,16 @@ async function fetchLive(force) {
       distance: s.distance ?? null, open: s.open ?? null,
       price: s.prices?.find(p => p.fuelType === fuel)?.amount ?? null
     }));
-    rows.forEach(r => { st.stations[r.id] ??= { name: r.name, address: r.address, postalCode: r.postalCode, city: r.city }; });
-    st.liveCache[key] = { t: Date.now() / 1000, rows };
     st.liveFailed = false;
+    if (rows.some(r => r.price != null)) {
+      rows.forEach(r => { st.stations[r.id] ??= { name: r.name, address: r.address, postalCode: r.postalCode, city: r.city }; });
+      st.liveCache[key] = { t: Date.now() / 1000, rows };
+      st.liveMsg[key] = '';
+    } else {
+      // E-Control liefert manchmal kurz keine Preise (z. B. um Mitternacht) – dann bei den gespeicherten Daten bleiben
+      delete st.liveCache[key];
+      st.liveMsg[key] = 'E-Control liefert gerade keine Preise. Angezeigt wird der letzte stündliche Abruf.';
+    }
   } catch (err) {
     st.liveFailed = true;
   }
