@@ -262,7 +262,7 @@ function drawChart(nowT) {
     }));
   }
   datasets = datasets.filter(d => d.data.length);
-  datasets.forEach(d => Object.assign(d, { stepped: 'before', pointRadius: c => c.dataIndex === c.dataset.data.length - 1 ? 3 : 0, pointBackgroundColor: d.borderColor, pointHitRadius: 6, tension: 0, fill: false }));
+  datasets.forEach(d => Object.assign(d, { clip: false, stepped: 'before', pointRadius: c => c.dataIndex === c.dataset.data.length - 1 ? 3 : 0, pointBackgroundColor: d.borderColor, pointHitRadius: 6, tension: 0, fill: false }));
 
   const empty = !datasets.length;
   $('chartEmpty').hidden = !empty;
