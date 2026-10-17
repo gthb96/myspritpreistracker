@@ -1,0 +1,334 @@
+<!doctype html>
+<html lang="de-AT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Spritpreise</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⛽</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #E9EDF1; --surface: #FFFFFF; --ink: #17222C; --muted: #5A6774; --line: #D3DAE1;
+  --sign: #1D4F91; --sign-ink: #FFFFFF; --signal: #F2C200; --up: #B3261E; --down: #1E7A46;
+  --sans: "Barlow", "Segoe UI", system-ui, sans-serif;
+  --cond: "Barlow Condensed", "Arial Narrow", "Roboto Condensed", sans-serif;
+  color-scheme: light;
+  box-sizing: border-box;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #131A21; --surface: #1C252E; --ink: #E6ECF1; --muted: #98A5B2; --line: #2C3844;
+    --sign: #2A63AE; --signal: #F5CD2E; --up: #F07A70; --down: #5CC48A; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #131A21; --surface: #1C252E; --ink: #E6ECF1; --muted: #98A5B2; --line: #2C3844;
+  --sign: #2A63AE; --signal: #F5CD2E; --up: #F07A70; --down: #5CC48A; color-scheme: dark;
+}
+*, *::before, *::after { box-sizing: inherit; }
+html { scroll-padding-top: env(safe-area-inset-top, 0px); }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 400 16px/1.5 var(--sans); }
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 3px solid var(--signal); outline-offset: 2px; }
+
+.wrap { max-width: 1120px; margin: 0 auto; padding: 20px 20px 48px; }
+header.top { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px 24px; }
+h1 { font: 700 2rem/1 var(--cond); margin: 0; letter-spacing: .01em; }
+.stamp { color: var(--muted); font-size: .9rem; }
+
+.controls { display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: center; margin: 20px 0 16px; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: var(--surface); }
+.seg button { white-space: nowrap; border: 0; background: none; padding: 7px 14px; cursor: pointer; font-weight: 500; }
+.seg button + button { border-left: 1px solid var(--line); }
+.seg button[aria-pressed="true"] { background: var(--sign); color: var(--sign-ink); }
+.places { display: flex; flex-wrap: wrap; gap: 6px; }
+.places button { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 6px 14px; cursor: pointer; font-weight: 500; }
+.places button[aria-pressed="true"] { border-color: var(--sign); box-shadow: inset 0 0 0 1px var(--sign); color: var(--sign); }
+:root[data-theme="dark"] .places button[aria-pressed="true"] { color: var(--ink); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .places button[aria-pressed="true"] { color: var(--ink); } }
+
+.grid { display: grid; grid-template-columns: minmax(260px, 340px) 1fr; gap: 20px; align-items: start; }
+@media (max-width: 820px) { .grid { grid-template-columns: 1fr; } }
+
+/* Preistafel – das eine laute Element der Seite */
+.totem { background: var(--sign); color: var(--sign-ink); border-radius: 10px; padding: 18px 20px 20px; border: 3px solid #fff3; }
+.totem .place { font: 600 1.15rem/1.2 var(--cond); opacity: .9; }
+.totem .fuel { display: inline-block; margin-top: 10px; background: var(--signal); color: #17222C; font: 700 1rem/1 var(--cond); padding: 5px 9px 4px; border-radius: 4px; }
+.digits { font: 700 clamp(4rem, 12vw, 5.6rem)/.95 var(--cond); font-variant-numeric: tabular-nums; margin: 10px 0 4px; letter-spacing: -.01em; }
+.digits sup { font-size: .5em; vertical-align: .85em; margin-left: .03em; }
+.totem .where { font-weight: 500; }
+.totem .addr { opacity: .8; font-size: .92rem; }
+.facts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 16px; padding-top: 14px; border-top: 1px solid #ffffff40; }
+.facts dt { font-size: .78rem; opacity: .8; }
+.facts dd { margin: 0; font: 600 1.25rem/1.2 var(--cond); font-variant-numeric: tabular-nums; }
+.live { margin-top: 16px; width: 100%; background: transparent; color: var(--sign-ink); border: 1px solid #ffffff80; border-radius: 6px; padding: 8px; cursor: pointer; font-weight: 500; }
+.live:hover { background: #ffffff1a; }
+.note { font-size: .85rem; margin-top: 8px; opacity: .85; min-height: 1.2em; }
+
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; }
+.tablewrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+th, td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-size: .82rem; font-weight: 500; color: var(--muted); }
+tr:last-child td { border-bottom: 0; }
+td.num, th.num { text-align: right; white-space: nowrap; }
+td .sub { display: block; color: var(--muted); font-size: .85rem; }
+.price { font: 600 1.35rem/1 var(--cond); }
+.price sup { font-size: .6em; }
+tbody tr { cursor: pointer; }
+tbody tr.more { cursor: default; }
+tbody tr.more:hover { background: none; }
+tbody tr:hover { background: color-mix(in srgb, var(--sign) 6%, transparent); }
+tbody tr[aria-selected="true"] { background: color-mix(in srgb, var(--signal) 22%, transparent); }
+.closed { color: var(--muted); }
+
+.history { margin-top: 20px; padding: 16px 18px 18px; }
+.history header { display: flex; flex-wrap: wrap; gap: 10px 20px; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+h2 { font: 600 1.4rem/1.2 var(--cond); margin: 0; }
+.chartbox { position: relative; height: clamp(260px, 42vw, 380px); }
+.empty { color: var(--muted); padding: 32px 8px; text-align: center; }
+.up { color: var(--up); } .down { color: var(--down); }
+footer { color: var(--muted); font-size: .85rem; margin-top: 24px; }
+footer a { color: inherit; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <h1>Spritpreise</h1>
+    <span class="stamp" id="stamp">Daten werden geladen …</span>
+  </header>
+
+  <div class="controls">
+    <div class="seg" role="group" aria-label="Kraftstoff" id="fuelSeg"></div>
+    <div class="places" role="group" aria-label="Ort" id="places"></div>
+  </div>
+
+  <div class="grid">
+    <section class="totem" aria-live="polite" id="totem"></section>
+    <section class="panel tablewrap">
+      <table>
+        <thead><tr><th>Tankstelle</th><th class="num">Entfernung</th><th class="num">Preis</th></tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </section>
+  </div>
+
+  <section class="panel history">
+    <header>
+      <h2 id="histTitle">Preisverlauf</h2>
+      <div class="seg" role="group" aria-label="Ansicht" id="modeSeg"></div>
+      <div class="seg" role="group" aria-label="Zeitraum" id="rangeSeg"></div>
+    </header>
+    <div class="chartbox"><canvas id="chart" aria-label="Preisverlauf"></canvas></div>
+    <div class="empty" id="chartEmpty" hidden></div>
+  </section>
+
+  <footer>Datenquelle: <a href="https://www.spritpreisrechner.at" rel="noopener">E-Control Spritpreisrechner</a>. Die Verlaufsdaten sammelt dieses Projekt selbst bei jedem Abruf.</footer>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+<script>
+const API = 'https://api.e-control.at/sprit/1.0/search/gas-stations/by-address';
+const FUEL_LABEL = { DIE: 'Diesel', SUP: 'Super 95', GAS: 'CNG' };
+const RANGES = [['7T', 7], ['30T', 30], ['90T', 90], ['1J', 365], ['Alles', 0]];
+const DAY = 86400;
+
+const st = {
+  cfg: null, latest: null, stations: {}, manifest: { months: [] }, months: {},
+  fuel: null, loc: null, mode: 'places', range: 30, selected: null, live: null, chart: null
+};
+try { Object.assign(st, JSON.parse(localStorage.getItem('sprit-ui') || '{}')); } catch {}
+const saveUi = () => { try { localStorage.setItem('sprit-ui', JSON.stringify({ fuel: st.fuel, loc: st.loc, mode: st.mode, range: st.range })); } catch {} };
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const fmt3 = n => n.toFixed(3).replace('.', ',');
+const priceHtml = n => { const s = fmt3(n); return `${s.slice(0, -1)}<sup>${s.slice(-1)}</sup>`; };
+const fmtTime = t => new Date(t * 1000).toLocaleString('de-AT', { weekday: 'short', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+const getJson = async url => { const r = await fetch(url, { cache: 'no-cache' }); if (!r.ok) throw new Error(`${url}: HTTP ${r.status}`); return r.json(); };
+
+function seg(el, items, current, onPick) {
+  el.innerHTML = items.map(([label, val]) => `<button type="button" data-v="${esc(val)}" aria-pressed="${String(val) === String(current)}">${esc(label)}</button>`).join('');
+  el.onclick = e => { const b = e.target.closest('button'); if (b) onPick(b.dataset.v); };
+}
+
+async function loadMonths(fromTs) {
+  const from = fromTs ? new Date(fromTs * 1000).toISOString().slice(0, 7) : '';
+  const need = st.manifest.months.filter(m => m >= from && !st.months[m]);
+  await Promise.all(need.map(async m => { try { st.months[m] = await getJson(`data/history/${m}.json`); } catch { st.months[m] = { series: {}, prices: {} }; } }));
+}
+const collect = (kind, key) => st.manifest.months.flatMap(m => st.months[m]?.[kind]?.[key] ?? []);
+
+function currentRows() {
+  if (st.live && st.live.loc === st.loc && st.live.fuel === st.fuel) return st.live.rows;
+  const r = st.latest?.results.find(x => x.location === st.loc && x.fuel === st.fuel);
+  return (r?.stations ?? []).map(s => ({ ...s, ...(st.stations[s.id] || {}) }));
+}
+
+function valueAt(series, t) { let v = null; for (const p of series) { if (p[0] <= t) v = p[1]; else break; } return v; }
+
+function render() {
+  const locs = st.cfg.locations;
+  seg($('fuelSeg'), st.cfg.fuelTypes.map(f => [FUEL_LABEL[f] || f, f]), st.fuel, v => { st.fuel = v; st.selected = null; update(); });
+  $('places').innerHTML = locs.map(l => `<button type="button" data-v="${esc(l.id)}" aria-pressed="${l.id === st.loc}">${esc(l.name)}</button>`).join('');
+  $('places').onclick = e => { const b = e.target.closest('button'); if (b) { st.loc = b.dataset.v; st.selected = null; update(); } };
+  seg($('modeSeg'), [['Orte', 'places'], ['Tankstellen', 'stations']], st.mode, v => { st.mode = v; update(); });
+  seg($('rangeSeg'), RANGES.map(([l, d]) => [l, d]), st.range, v => { st.range = Number(v); update(); });
+
+  const loc = locs.find(l => l.id === st.loc);
+  const all = currentRows();
+  const rows = all.filter(r => r.price != null).sort((a, b) => a.price - b.price);
+  const hiddenCount = all.length - rows.length;
+  const more = hiddenCount ? `<tr class="more"><td colspan="3" class="sub">${hiddenCount} weitere Tankstelle${hiddenCount > 1 ? 'n' : ''} in der Nähe ${hiddenCount > 1 ? 'sind' : 'ist'} teurer – E-Control veröffentlicht nur die günstigeren Preise.</td></tr>` : '';
+  const best = rows.find(r => r.price != null);
+  const series = collect('series', `${st.loc}|${st.fuel}`);
+  const nowT = st.live?.t ?? st.latest?.updated ?? Date.now() / 1000;
+  const prev = valueAt(series, nowT - DAY);
+  const recent = series.filter(p => p[0] >= nowT - 7 * DAY).map(p => p[1]);
+  const delta = best && prev != null ? best.price - prev : null;
+
+  $('totem').innerHTML = `
+    <div class="place">${esc(loc?.name)}</div>
+    <span class="fuel">${esc(FUEL_LABEL[st.fuel] || st.fuel)}</span>
+    ${best ? `
+      <div class="digits">${priceHtml(best.price)}</div>
+      <div class="where">${esc(best.name)}</div>
+      <div class="addr">${esc([best.address, [best.postalCode, best.city].filter(Boolean).join(' ')].filter(Boolean).join(', '))}</div>
+      <dl class="facts">
+        <div><dt>ggü. gestern</dt><dd>${delta == null ? '–' : (delta > 0 ? '+' : delta < 0 ? '−' : '±') + fmt3(Math.abs(delta))}</dd></div>
+        <div><dt>7 Tage tief</dt><dd>${recent.length ? fmt3(Math.min(...recent)) : '–'}</dd></div>
+        <div><dt>7 Tage hoch</dt><dd>${recent.length ? fmt3(Math.max(...recent)) : '–'}</dd></div>
+      </dl>` : `<div class="digits">–</div><div class="where">Für diesen Ort liegen noch keine Preise vor.</div>`}
+    <button type="button" class="live" id="liveBtn">Jetzt direkt bei E-Control abfragen</button>
+    <div class="note" id="liveNote">${st.live && st.live.loc === st.loc && st.live.fuel === st.fuel ? 'Live-Werte vom ' + fmtTime(st.live.t) : ''}</div>`;
+  $('liveBtn').onclick = fetchLive;
+
+  $('rows').innerHTML = rows.length ? rows.map(r => `
+    <tr data-id="${esc(r.id)}" aria-selected="${String(r.id) === String(st.selected)}" class="${r.open === false ? 'closed' : ''}">
+      <td>${esc(r.name || 'Tankstelle ' + r.id)}<span class="sub">${esc([r.address, r.city].filter(Boolean).join(', '))}${r.open === false ? ' · geschlossen' : ''}</span></td>
+      <td class="num">${r.distance != null ? r.distance.toFixed(1).replace('.', ',') + ' km' : '–'}</td>
+      <td class="num">${r.price != null ? `<span class="price">${priceHtml(r.price)}</span>` : '<span class="sub">kein Preis</span>'}</td>
+    </tr>`).join('') + more : `<tr><td colspan="3" class="sub">Noch keine Daten. Sobald der erste automatische Abruf gelaufen ist, erscheinen hier die Tankstellen.</td></tr>`;
+  $('rows').onclick = e => {
+    const tr = e.target.closest('tr[data-id]'); if (!tr) return;
+    st.selected = st.selected === tr.dataset.id ? null : tr.dataset.id;
+    if (st.selected) st.mode = 'stations';
+    update();
+  };
+
+  $('stamp').textContent = st.latest ? `Stand: ${fmtTime(st.latest.updated)}` : 'Noch kein Abruf';
+  drawChart(nowT);
+}
+
+function css(name) { return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+const PALETTE = ['#1D4F91', '#D08A00', '#1E7A46', '#B3261E', '#6B4FA0', '#0F7C8C', '#8A5A2B', '#C2477A', '#4D6B1F', '#5A6774'];
+
+function drawChart(nowT) {
+  const from = st.range ? nowT - st.range * DAY : 0;
+  const extend = (pts) => {
+    const inRange = pts.filter(p => p[0] >= from);
+    const before = pts.filter(p => p[0] < from).at(-1);
+    const out = (before ? [[from, before[1]]] : []).concat(inRange).map(p => ({ x: p[0] * 1000, y: p[1] }));
+    if (out.length) out.push({ x: nowT * 1000, y: out.at(-1).y });
+    return out;
+  };
+  let datasets = [];
+  const fuelName = FUEL_LABEL[st.fuel] || st.fuel;
+  if (st.mode === 'places') {
+    $('histTitle').textContent = `Günstigster Preis je Ort · ${fuelName}`;
+    datasets = st.cfg.locations.map((l, i) => ({
+      label: l.name, data: extend(collect('series', `${l.id}|${st.fuel}`)),
+      borderColor: PALETTE[i % PALETTE.length], borderWidth: l.id === st.loc ? 3 : 1.5
+    }));
+  } else {
+    const loc = st.cfg.locations.find(l => l.id === st.loc);
+    $('histTitle').textContent = `Tankstellen in ${loc?.name} · ${fuelName}`;
+    const ids = currentRows().filter(r => r.price != null).map(r => String(r.id));
+    if (st.selected && !ids.includes(String(st.selected))) ids.push(String(st.selected));
+    datasets = ids.map((id, i) => ({
+      label: st.stations[id]?.name || `Tankstelle ${id}`, data: extend(collect('prices', `${id}|${st.fuel}`)),
+      borderColor: PALETTE[i % PALETTE.length],
+      borderWidth: id === String(st.selected) ? 3.5 : 1.5,
+      hidden: !!st.selected && id !== String(st.selected) && i > 2
+    }));
+  }
+  datasets = datasets.filter(d => d.data.length);
+  datasets.forEach(d => Object.assign(d, { stepped: 'before', pointRadius: 0, pointHitRadius: 6, tension: 0, fill: false }));
+
+  const empty = !datasets.length;
+  $('chartEmpty').hidden = !empty;
+  $('chartEmpty').textContent = empty ? 'Für diesen Zeitraum gibt es noch keine Verlaufsdaten. Der Verlauf füllt sich mit jedem stündlichen Abruf.' : '';
+  document.querySelector('.chartbox').hidden = empty;
+  if (empty || typeof Chart === 'undefined') return;
+
+  const ink = css('--muted'), grid = css('--line');
+  const opts = {
+    responsive: true, maintainAspectRatio: false, animation: false,
+    interaction: { mode: 'nearest', axis: 'x', intersect: false },
+    scales: {
+      x: { type: 'time', min: from ? from * 1000 : undefined, max: nowT * 1000, ticks: { color: ink, maxRotation: 0, autoSkipPadding: 16, callback: v => new Date(v).toLocaleDateString('de-AT', st.range && st.range <= 2 ? { hour: '2-digit', minute: '2-digit' } : { day: 'numeric', month: 'short' }) }, grid: { color: grid },
+           time: { tooltipFormat: 'dd.MM.yyyy HH:mm', displayFormats: { hour: 'HH:mm', day: 'd. MMM', week: 'd. MMM', month: 'MMM yy' } } },
+      y: { ticks: { color: ink, callback: v => fmt3(v) }, grid: { color: grid } }
+    },
+    plugins: {
+      legend: { labels: { color: css('--ink'), boxWidth: 14, boxHeight: 3 } },
+      tooltip: { callbacks: { label: c => `${c.dataset.label}: € ${fmt3(c.parsed.y)}` } }
+    }
+  };
+  if (st.chart) { st.chart.data.datasets = datasets; st.chart.options = opts; st.chart.update(); }
+  else st.chart = new Chart($('chart'), { type: 'line', data: { datasets }, options: opts });
+}
+
+async function fetchLive() {
+  const loc = st.cfg.locations.find(l => l.id === st.loc);
+  $('liveNote').textContent = 'Frage E-Control ab …';
+  try {
+    const list = await getJson(`${API}?latitude=${loc.lat}&longitude=${loc.lon}&fuelType=${st.fuel}&includeClosed=false`);
+    const rows = list.map(s => ({
+      id: s.id, name: s.name, address: s.location?.address, postalCode: s.location?.postalCode, city: s.location?.city,
+      distance: s.distance ?? null, open: s.open ?? null,
+      price: s.prices?.find(p => p.fuelType === st.fuel)?.amount ?? null
+    }));
+    rows.forEach(r => { st.stations[r.id] ??= { name: r.name, address: r.address, postalCode: r.postalCode, city: r.city }; });
+    st.live = { loc: st.loc, fuel: st.fuel, t: Date.now() / 1000, rows };
+    render();
+  } catch (err) {
+    $('liveNote').textContent = 'Direktabfrage nicht möglich (der Browser blockiert sie vermutlich). Die stündlich gesammelten Daten bleiben gültig.';
+  }
+}
+
+async function update() {
+  saveUi();
+  const nowT = st.latest?.updated ?? Date.now() / 1000;
+  await loadMonths(st.range ? nowT - (st.range + 1) * DAY : 0);
+  render();
+}
+
+(async function init() {
+  try {
+    st.cfg = await getJson('config.json');
+  } catch {
+    $('stamp').textContent = 'config.json nicht gefunden. Die Seite muss über einen Webserver geöffnet werden (z. B. GitHub Pages), nicht per Doppelklick.';
+    return;
+  }
+  st.cfg.fuelTypes = st.cfg.fuelTypes?.length ? st.cfg.fuelTypes : ['DIE', 'SUP'];
+  if (!st.cfg.fuelTypes.includes(st.fuel)) st.fuel = st.cfg.fuelTypes[0];
+  if (!st.cfg.locations.some(l => l.id === st.loc)) st.loc = st.cfg.locations[0]?.id;
+  if (!RANGES.some(r => r[1] === st.range)) st.range = 30;
+  [st.latest, st.stations, st.manifest] = await Promise.all([
+    getJson('data/latest.json').catch(() => null),
+    getJson('data/stations.json').catch(() => ({})),
+    getJson('data/manifest.json').catch(() => ({ months: [] }))
+  ]);
+  await update();
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', render);
+})();
+</script>
+</body>
+</html>

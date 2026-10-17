@@ -1,0 +1,7 @@
+{
+  "locations": [
+    { "id": "amstetten", "name": "Amstetten", "lat": 48.1226, "lon": 14.8722 },
+    { "id": "linz",      "name": "Linz",      "lat": 48.3059, "lon": 14.2862 }
+  ],
+  "fuelTypes": ["DIE", "SUP"]
+}
