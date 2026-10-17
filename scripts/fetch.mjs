@@ -36,8 +36,9 @@ const pushIfChanged = (arr, entry) => {
   if (!last || JSON.stringify(last.slice(1)) !== JSON.stringify(entry.slice(1))) arr.push(entry);
 };
 
+const prevLatest = await readJson(path.join(DATA, 'latest.json'), { results: [] });
 const latest = { updated: now, results: [] };
-let failures = 0;
+let failures = 0, fresh = 0;
 
 for (const loc of cfg.locations) {
   for (const fuel of fuels) {
@@ -51,6 +52,14 @@ for (const loc of cfg.locations) {
     } catch (err) {
       failures++;
       console.error(`✗ ${loc.name} / ${fuel}: ${err.message}`);
+      continue;
+    }
+
+    if (!list.some(s => s.prices?.some(p => p.fuelType === fuel && p.amount != null))) {
+      // Leere Antwort (kommt z. B. um Mitternacht vor): letzte gültige Daten behalten, nichts speichern
+      const prev = prevLatest.results?.find(r => r.location === loc.id && r.fuel === fuel);
+      if (prev) latest.results.push(prev);
+      console.warn(`! ${loc.name} / ${fuel}: keine Preise erhalten – vorherige Daten bleiben`);
       continue;
     }
 
@@ -73,14 +82,16 @@ for (const loc of cfg.locations) {
       pushIfChanged(hist.series[`${loc.id}|${fuel}`] ??= [], [now, min, avg, priced.length]);
     }
     latest.results.push({ location: loc.id, fuel, stations: rows });
+    fresh++;
     console.log(`✓ ${loc.name} / ${fuel}: ${priced.length} Preise`);
     if (!process.env.FAKE_NOW) await sleep(800); // API schonen
   }
 }
 
-if (!latest.results.length) {
-  console.error('Keine Daten erhalten – nichts geschrieben.');
-  process.exit(1);
+if (!fresh) {
+  // Nichts Neues (z. B. E-Control kurz ohne Preise): Daten unverändert lassen
+  console.warn('Keine neuen Preise erhalten – nichts geschrieben.');
+  process.exit(failures ? 1 : 0);
 }
 
 if (!manifest.months.includes(month)) { manifest.months.push(month); manifest.months.sort(); }
