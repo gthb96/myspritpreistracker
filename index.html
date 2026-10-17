@@ -144,7 +144,7 @@ const DAY = 86400;
 
 const st = {
   cfg: null, latest: null, stations: {}, manifest: { months: [] }, months: {},
-  fuel: null, loc: null, mode: 'places', range: 30, selected: null, live: null, chart: null
+  fuel: null, loc: null, mode: 'places', range: 30, selected: null, liveCache: {}, liveBusy: {}, liveFailed: false, chart: null
 };
 try { Object.assign(st, JSON.parse(localStorage.getItem('sprit-ui') || '{}')); } catch {}
 const saveUi = () => { try { localStorage.setItem('sprit-ui', JSON.stringify({ fuel: st.fuel, loc: st.loc, mode: st.mode, range: st.range })); } catch {} };
@@ -168,8 +168,12 @@ async function loadMonths(fromTs) {
 }
 const collect = (kind, key) => st.manifest.months.flatMap(m => st.months[m]?.[kind]?.[key] ?? []);
 
+const LIVE_MAX_AGE = 5 * 60; // Live-Werte 5 Minuten wiederverwenden
+const liveFor = () => st.liveCache[`${st.loc}|${st.fuel}`];
+
 function currentRows() {
-  if (st.live && st.live.loc === st.loc && st.live.fuel === st.fuel) return st.live.rows;
+  const lv = liveFor();
+  if (lv) return lv.rows;
   const r = st.latest?.results.find(x => x.location === st.loc && x.fuel === st.fuel);
   return (r?.stations ?? []).map(s => ({ ...s, ...(st.stations[s.id] || {}) }));
 }
@@ -191,7 +195,7 @@ function render() {
   const more = hiddenCount ? `<tr class="more"><td colspan="3" class="sub">${hiddenCount} weitere Tankstelle${hiddenCount > 1 ? 'n' : ''} in der Nähe ${hiddenCount > 1 ? 'sind' : 'ist'} teurer – E-Control veröffentlicht nur die günstigeren Preise.</td></tr>` : '';
   const best = rows.find(r => r.price != null);
   const series = collect('series', `${st.loc}|${st.fuel}`);
-  const nowT = st.live?.t ?? st.latest?.updated ?? Date.now() / 1000;
+  const nowT = liveFor()?.t ?? st.latest?.updated ?? Date.now() / 1000;
   const prev = valueAt(series, nowT - DAY);
   const recent = series.filter(p => p[0] >= nowT - 7 * DAY).map(p => p[1]);
   const delta = best && prev != null ? best.price - prev : null;
@@ -208,9 +212,9 @@ function render() {
         <div><dt>7 Tage tief</dt><dd>${recent.length ? fmt3(Math.min(...recent)) : '–'}</dd></div>
         <div><dt>7 Tage hoch</dt><dd>${recent.length ? fmt3(Math.max(...recent)) : '–'}</dd></div>
       </dl>` : `<div class="digits">–</div><div class="where">Für diesen Ort liegen noch keine Preise vor.</div>`}
-    <button type="button" class="live" id="liveBtn">Jetzt direkt bei E-Control abfragen</button>
-    <div class="note" id="liveNote">${st.live && st.live.loc === st.loc && st.live.fuel === st.fuel ? 'Live-Werte vom ' + fmtTime(st.live.t) : ''}</div>`;
-  $('liveBtn').onclick = fetchLive;
+    <button type="button" class="live" id="liveBtn">Aktualisieren</button>
+    <div class="note" id="liveNote">${liveFor() ? 'Live von E-Control, ' + new Date(liveFor().t * 1000).toLocaleTimeString('de-AT', { hour: '2-digit', minute: '2-digit' }) + ' Uhr' : (st.liveBusy[`${st.loc}|${st.fuel}`] ? 'Hole aktuelle Preise …' : '')}</div>`;
+  $('liveBtn').onclick = () => fetchLive(true);
 
   $('rows').innerHTML = rows.length ? rows.map(r => `
     <tr data-id="${esc(r.id)}" aria-selected="${String(r.id) === String(st.selected)}" class="${r.open === false ? 'closed' : ''}">
@@ -225,7 +229,7 @@ function render() {
     update();
   };
 
-  $('stamp').textContent = st.latest ? `Stand: ${fmtTime(st.latest.updated)}` : 'Noch kein Abruf';
+  $('stamp').textContent = liveFor() ? `Live: ${fmtTime(liveFor().t)}` : st.latest ? `Stand: ${fmtTime(st.latest.updated)}` : 'Noch kein Abruf';
   drawChart(nowT);
 }
 
@@ -294,22 +298,30 @@ function drawChart(nowT) {
   else st.chart = new Chart($('chart'), { type: 'line', data: { datasets }, options: opts });
 }
 
-async function fetchLive() {
-  const loc = st.cfg.locations.find(l => l.id === st.loc);
-  $('liveNote').textContent = 'Frage E-Control ab …';
+async function fetchLive(force) {
+  const key = `${st.loc}|${st.fuel}`, loc = st.cfg.locations.find(l => l.id === st.loc), fuel = st.fuel;
+  const cached = st.liveCache[key];
+  if (!loc || st.liveBusy[key]) return;
+  if (!force && (st.liveFailed || (cached && Date.now() / 1000 - cached.t < LIVE_MAX_AGE))) return;
+  st.liveBusy[key] = true;
+  if (key === `${st.loc}|${st.fuel}` && $('liveNote')) $('liveNote').textContent = 'Hole aktuelle Preise …';
   try {
-    const list = await getJson(`${API}?latitude=${loc.lat}&longitude=${loc.lon}&fuelType=${st.fuel}&includeClosed=false`);
+    const list = await getJson(`${API}?latitude=${loc.lat}&longitude=${loc.lon}&fuelType=${fuel}&includeClosed=false`);
     const rows = list.map(s => ({
       id: s.id, name: s.name, address: s.location?.address, postalCode: s.location?.postalCode, city: s.location?.city,
       distance: s.distance ?? null, open: s.open ?? null,
-      price: s.prices?.find(p => p.fuelType === st.fuel)?.amount ?? null
+      price: s.prices?.find(p => p.fuelType === fuel)?.amount ?? null
     }));
     rows.forEach(r => { st.stations[r.id] ??= { name: r.name, address: r.address, postalCode: r.postalCode, city: r.city }; });
-    st.live = { loc: st.loc, fuel: st.fuel, t: Date.now() / 1000, rows };
-    render();
+    st.liveCache[key] = { t: Date.now() / 1000, rows };
+    st.liveFailed = false;
   } catch (err) {
-    $('liveNote').textContent = 'Direktabfrage nicht möglich (der Browser blockiert sie vermutlich). Die stündlich gesammelten Daten bleiben gültig.';
+    st.liveFailed = true;
   }
+  st.liveBusy[key] = false;
+  if (key !== `${st.loc}|${st.fuel}`) return; // inzwischen anderer Ort/Kraftstoff gewählt
+  render();
+  if (st.liveFailed && force) $('liveNote').textContent = 'E-Control ist gerade nicht erreichbar. Angezeigt wird der letzte stündliche Abruf.';
 }
 
 async function update() {
@@ -317,6 +329,7 @@ async function update() {
   const nowT = st.latest?.updated ?? Date.now() / 1000;
   await loadMonths(st.range ? nowT - (st.range + 1) * DAY : 0);
   render();
+  fetchLive(false);
 }
 
 (async function init() {
@@ -337,6 +350,8 @@ async function update() {
   ]);
   await update();
   matchMedia('(prefers-color-scheme: dark)').addEventListener('change', render);
+  // Beim Zurückkehren zur Seite (z. B. am Handy) neu abfragen, wenn die Werte älter als 5 Minuten sind
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) fetchLive(false); });
 })();
 </script>
 </body>
