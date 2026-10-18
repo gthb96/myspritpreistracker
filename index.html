@@ -4,7 +4,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Spritpreise</title>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⛽</text></svg>">
+<link rel="icon" href="icons/favicon-32.png" type="image/png">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-title" content="Spritpreise">
+<meta name="theme-color" content="#E9EDF1" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#131A21" media="(prefers-color-scheme: dark)">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
@@ -368,6 +373,7 @@ async function update() {
   await update();
   matchMedia('(prefers-color-scheme: dark)').addEventListener('change', render);
   // Beim Zurückkehren zur Seite (z. B. am Handy) neu abfragen, wenn die Werte älter als 5 Minuten sind
+  if ('serviceWorker' in navigator && !window.DEMO) navigator.serviceWorker.register('sw.js').catch(() => {});
   document.addEventListener('visibilitychange', () => { if (!document.hidden) fetchLive(false); });
 })();
 </script>
