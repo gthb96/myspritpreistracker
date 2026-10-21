@@ -237,7 +237,8 @@ function render() {
   };
 
   $('stamp').textContent = liveFor() ? `Live: ${fmtTime(liveFor().t)}` : st.latest ? `Stand: ${fmtTime(st.latest.updated)}` : 'Noch kein Abruf';
-  drawChart(nowT);
+  // Diagramm endet beim letzten stündlichen Abruf, nicht bei der Live-Abfrage
+  drawChart(st.latest?.updated ?? nowT);
 }
 
 function css(name) { return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
@@ -293,6 +294,8 @@ function drawChart(nowT) {
   const xMax = nowT * 1000;
   const xMin = Math.min(Math.max(from * 1000, firstX), xMax - 6 * 3600 * 1000);
   const shortSpan = xMax - xMin < 2 * DAY * 1000;
+  // Eine Beschriftung pro Stunde, Tag oder Monat – so wiederholt sich kein Datum
+  const xUnit = shortSpan ? 'hour' : xMax - xMin < 120 * DAY * 1000 ? 'day' : 'month';
   const ys = datasets.flatMap(d => d.data.map(p => p.y));
   const yMid = (Math.min(...ys) + Math.max(...ys)) / 2, yHalf = Math.max((Math.max(...ys) - Math.min(...ys)) / 2, 0.005);
   const opts = {
@@ -300,8 +303,8 @@ function drawChart(nowT) {
     layout: { padding: { top: 6, right: 8 } },
     interaction: { mode: 'nearest', axis: 'x', intersect: false },
     scales: {
-      x: { type: 'time', min: xMin, max: xMax, ticks: { color: ink, maxRotation: 0, autoSkipPadding: 16, callback: v => shortSpan ? new Date(v).toLocaleTimeString('de-AT', { hour: '2-digit', minute: '2-digit' }) : new Date(v).toLocaleDateString('de-AT', { day: 'numeric', month: 'short' }) }, grid: { color: grid },
-           time: { tooltipFormat: 'dd.MM.yyyy HH:mm', displayFormats: { hour: 'HH:mm', day: 'd. MMM', week: 'd. MMM', month: 'MMM yy' } } },
+      x: { type: 'time', min: xMin, max: xMax, ticks: { color: ink, maxRotation: 0, autoSkipPadding: 16, callback: v => xUnit === 'hour' ? new Date(v).toLocaleTimeString('de-AT', { hour: '2-digit', minute: '2-digit' }) : xUnit === 'month' ? new Date(v).toLocaleDateString('de-AT', { month: 'short', year: '2-digit' }) : new Date(v).toLocaleDateString('de-AT', { day: 'numeric', month: 'short' }) }, grid: { color: grid },
+           time: { unit: xUnit, tooltipFormat: 'dd.MM.yyyy HH:mm', displayFormats: { hour: 'HH:mm', day: 'd. MMM', week: 'd. MMM', month: 'MMM yy' } } },
       y: { suggestedMin: yMid - yHalf * 1.15, suggestedMax: yMid + yHalf * 1.15, ticks: { color: ink, callback: v => fmt3(v) }, grid: { color: grid } }
     },
     plugins: {
