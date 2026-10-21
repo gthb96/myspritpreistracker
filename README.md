@@ -1,30 +1,41 @@
 # Spritpreise – eigener Preisverlauf aus E-Control-Daten
 
-Ein kleines Dashboard, das für deine festgelegten Orte in Österreich die aktuellen
+Ein kleines Dashboard, das für festgelegte Orte in Österreich die aktuellen
 Spritpreise anzeigt und den Preisverlauf aufzeichnet. Die Daten kommen von der
-öffentlichen Spritpreisrechner-API der E-Control.
+öffentlichen Spritpreisrechner-API der E-Control. Die Seite lässt sich am Handy
+und am PC als App (PWA) installieren.
 
 **Wichtig:** E-Control stellt nur *aktuelle* Preise bereit, keine historischen.
 Der Verlauf entsteht deshalb ab dem Tag, an dem du das Projekt startest: Ein
 GitHub-Action-Job ruft stündlich die Preise ab und speichert jede Preisänderung
-in `data/`.
+in `data/`. Beim Öffnen holt die Seite zusätzlich die Live-Preise direkt von
+E-Control.
 
 ## Einrichten (ca. 10 Minuten, kostenlos)
 
-1. Auf GitHub ein neues **öffentliches** Repository anlegen (GitHub Pages ist für
-   private Repos nur in bezahlten Plänen verfügbar).
-2. Alle Dateien aus diesem Ordner hochladen – inklusive des versteckten Ordners
-   `.github/`.
-3. `config.json` anpassen: deine Orte mit Koordinaten eintragen
-   (Koordinaten bekommst du z. B. in Google Maps per Rechtsklick auf einen Punkt).
-   `id` ist ein kurzer, eindeutiger Name ohne Leerzeichen.
-4. **Settings → Actions → General → Workflow permissions** auf
-   „Read and write permissions“ stellen.
-5. **Actions → „Spritpreise abrufen“ → Run workflow** einmal manuell starten.
+1. Dieses Repo über **Code → Download ZIP** herunterladen und entpacken.
+   Den Ordner `data` löschen, damit dein eigener Verlauf bei null startet.
+2. Auf GitHub ein neues **öffentliches** Repository anlegen (GitHub Pages ist für
+   private Repos nur in bezahlten Plänen verfügbar). README, .gitignore und
+   Lizenz nicht anhaken.
+3. `config.json` anpassen: deine Orte mit Koordinaten eintragen (siehe unten).
+4. Alles hochladen: **Add file → Upload files** und den Inhalt des Ordners per
+   **Drag & Drop** ins Fenster ziehen – nicht über „choose your files“, damit
+   lassen sich keine Ordner auswählen. Danach müssen `.github`, `icons`,
+   `scripts` und die Dateien direkt im Repo liegen, nicht in einem Unterordner.
+5. **Settings → Actions → General → Workflow permissions** auf
+   „Read and write permissions“ stellen und speichern.
+6. **Actions → „Spritpreise abrufen“ → Run workflow** einmal manuell starten.
    Danach läuft der Job automatisch jede Stunde.
-6. **Settings → Pages**: Source „Deploy from a branch“, Branch `main`, Ordner `/ (root)`.
-   Nach ein, zwei Minuten ist die Seite unter `https://<dein-name>.github.io/<repo>/`
-   erreichbar – auch am Handy (dort „Zum Startbildschirm hinzufügen“ für App-Gefühl).
+7. **Settings → Pages**: Source „Deploy from a branch“, Branch `main`, Ordner
+   `/ (root)`. Nach ein, zwei Minuten ist die Seite unter
+   `https://<dein-name>.github.io/<repo>/` erreichbar.
+
+## Als App installieren
+
+- **Android (Chrome):** Menü ⋮ → „App installieren“
+- **iPhone (Safari):** Teilen-Symbol → „Zum Home-Bildschirm“
+- **PC (Chrome/Edge):** Installations-Symbol rechts in der Adressleiste
 
 ## Konfiguration
 
@@ -37,18 +48,40 @@ in `data/`.
 }
 ```
 
-Kraftstoffe: `DIE` (Diesel), `SUP` (Super 95), `GAS` (CNG).
-Pro Ort liefert E-Control die nächstgelegenen Tankstellen im Umkreis; Preise
-gibt es nur für einen Teil davon (so ist die API aufgebaut).
+- **Koordinaten:** in Google Maps per Rechtsklick (am Handy: lange drücken) auf
+  einen Punkt. Die erste Zahl ist `lat`, die zweite `lon`. In kleinen Orten
+  reicht das Zentrum, in Städten besser der Punkt, wo du wirklich tankst.
+- **`id`:** kurz, eindeutig, ohne Leerzeichen. Nicht mehr ändern, sobald Daten
+  gesammelt werden – der Verlauf hängt an ihr. `name` kannst du jederzeit ändern.
+- **Kraftstoffe:** `DIE` (Diesel), `SUP` (Super 95), `GAS` (CNG).
+- **Datenschutz:** Das Repo ist öffentlich. Statt der eigenen Wohnadresse lieber
+  einen Punkt in der Nähe eintragen.
 
 Abrufintervall ändern: in `.github/workflows/update.yml` die `cron`-Zeile
-(Angabe in UTC). In Österreich dürfen Preise nur um 12:00 Uhr erhöht, aber
-jederzeit gesenkt werden – stündlich erfasst das gut.
+(Angabe in UTC).
+
+## Gut zu wissen
+
+- **Geplante Läufe sind bei GitHub nicht pünktlich.** Sie kommen oft 15–60
+  Minuten später, gerade bei neuen Repos kann der erste geplante Lauf ein paar
+  Stunden dauern. Für den Verlauf macht das nichts.
+- **„Günstigster Preis je Ort“** ist der günstigste unter den rund 10 nächsten
+  *geöffneten* Tankstellen. Nachts sind weniger offen, dann reicht der Kreis
+  weiter hinaus – deshalb kann der Wert morgens steigen, ohne dass irgendwo der
+  Preis erhöht wurde.
+- **Live vs. gespeichert:** Preistafel und Tankstellenliste zeigen den
+  Live-Stand. Diagramm und „7 Tage tief/hoch“ zeigen den letzten stündlichen
+  Abruf.
+- **Um Mitternacht** liefert E-Control kurz keine Preise. Seite und Abruf
+  behalten dann einfach die letzten gültigen Daten.
+- **60 Tage ohne Aktivität:** GitHub kann geplante Workflows dann pausieren.
+  Falls der Verlauf stoppt, im Actions-Tab wieder aktivieren.
+- Die Dateien in `data/` nicht von Hand bearbeiten.
 
 ## Lokal testen
 
 ```bash
-node scripts/fetch.mjs        # Node 18+; holt einmal die Preise
+node scripts/fetch.mjs        # Node 20+; holt einmal die Preise
 python3 -m http.server 8000   # danach http://localhost:8000 öffnen
 ```
 
@@ -63,11 +96,3 @@ die JSON-Dateien nicht laden darf.
   `series["ort|DIE"] = [[zeit, günstigster, schnitt, anzahl], …]` und
   `prices["tankstellenId|DIE"] = [[zeit, preis], …]` (Zeit als Unix-Sekunden).
   Ein Eintrag wird nur geschrieben, wenn sich der Wert geändert hat.
-
-## Hinweise
-
-- GitHub pausiert geplante Workflows in Repos ohne Aktivität nach 60 Tagen.
-  Falls der Verlauf stoppt: im Actions-Tab den Workflow wieder aktivieren.
-- Der Button „Jetzt direkt bei E-Control abfragen“ fragt die API aus dem Browser
-  ab. Ob das klappt, hängt davon ab, ob die API Browser-Anfragen zulässt; die
-  stündlichen Daten funktionieren unabhängig davon.
