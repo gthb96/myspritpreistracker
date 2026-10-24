@@ -2,7 +2,7 @@ name: Spritpreise abrufen
 
 on:
   schedule:
-    - cron: '7 * * * *'   # stündlich (UTC), Minute 7
+  #  - cron: '7 * * * *'   # stündlich (UTC), Minute 7
   workflow_dispatch:       # manuell über den Actions-Tab startbar
 
 permissions:
@@ -30,4 +30,3 @@ jobs:
           git commit -m "Spritpreise $(date -u +%Y-%m-%dT%H:%MZ)"
           git pull --rebase
           git push
-
