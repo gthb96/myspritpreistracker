@@ -1,8 +1,8 @@
 name: Spritpreise abrufen
 
 on:
-  schedule:
-  #  - cron: '7 * * * *'   # stündlich (UTC), Minute 7
+  # schedule:
+  #   - cron: '7 * * * *'   # stündlich (UTC), Minute 7
   workflow_dispatch:       # manuell über den Actions-Tab startbar
 
 permissions:
