@@ -8,7 +8,8 @@ und am PC als App (PWA) installieren.
 **Wichtig:** E-Control stellt nur *aktuelle* Preise bereit, keine historischen.
 Der Verlauf entsteht deshalb ab dem Tag, an dem du das Projekt startest: Ein
 GitHub-Action-Job ruft stündlich die Preise ab und speichert jede Preisänderung
-in `data/`. Beim Öffnen holt die Seite zusätzlich die Live-Preise direkt von
+in `data/`. Angestoßen wird er von cron-job.org, weil GitHubs eigener Zeitplan
+zu unzuverlässig ist. Beim Öffnen holt die Seite zusätzlich die Live-Preise direkt von
 E-Control.
 
 ## Einrichten (ca. 10 Minuten, kostenlos)
@@ -25,11 +26,72 @@ E-Control.
    `scripts` und die Dateien direkt im Repo liegen, nicht in einem Unterordner.
 5. **Settings → Actions → General → Workflow permissions** auf
    „Read and write permissions“ stellen und speichern.
-6. **Actions → „Spritpreise abrufen“ → Run workflow** einmal manuell starten.
-   Danach läuft der Job automatisch jede Stunde.
-7. **Settings → Pages**: Source „Deploy from a branch“, Branch `main`, Ordner
+6. **Actions → „Spritpreise abrufen“ → Run workflow** einmal manuell starten
+   und prüfen, ob er grün durchläuft.
+7. Den stündlichen Auslöser einrichten: entweder über cron-job.org
+   (zuverlässig, siehe unten) oder einfacher über GitHubs eigenen Zeitplan
+   (siehe „Alternative“ unten).
+8. **Settings → Pages**: Source „Deploy from a branch“, Branch `main`, Ordner
    `/ (root)`. Nach ein, zwei Minuten ist die Seite unter
    `https://<dein-name>.github.io/<repo>/` erreichbar.
+
+## Stündlicher Auslöser über cron-job.org
+
+GitHubs eingebauter Zeitplan (`schedule`) verwirft bei Auslastung viele Läufe –
+in der Praxis kam er nur alle 4–5 Stunden. Deshalb ist er in
+`.github/workflows/update.yml` auskommentiert, und cron-job.org startet den
+Workflow stündlich über die GitHub-API.
+
+**1. Zugangsschlüssel bei GitHub erstellen**
+- Profilbild → **Settings → Developer settings → Personal access tokens →
+  Fine-grained tokens → Generate new token**
+- Name z. B. `cron-job spritpreise`, Ablauf ein Jahr (Datum im Kalender notieren)
+- **Repository access:** „Only select repositories“ → dein Repo
+- **Permissions → Repository permissions → Actions:** „Read and write“
+- **Generate token** und den Schlüssel sofort kopieren (wird nur einmal angezeigt)
+
+**2. Auftrag bei cron-job.org anlegen**
+- URL (Name und Repo anpassen):
+  `https://api.github.com/repos/<dein-name>/<repo>/actions/workflows/update.yml/dispatches`
+- Zeitplan: Benutzerdefiniert, Minute 10 jeder Stunde (`10 * * * *`),
+  Zeitzone Europe/Vienna. Minute 10 statt 0, weil E-Control um 0 und 12 Uhr
+  kurz keine Preise liefert.
+- Benachrichtigung bei Fehlschlag einschalten.
+- Unter **Erweitert**: Methode `POST`, Body `{"ref":"main"}` und diese Header:
+
+  | Key | Wert |
+  |---|---|
+  | `Authorization` | `Bearer <dein-schlüssel>` |
+  | `Accept` | `application/vnd.github+json` |
+  | `X-GitHub-Api-Version` | `2026-03-10` |
+  | `Content-Type` | `application/json` |
+
+- **Testlauf:** Antwort **200** (mit API-Version `2022-11-28` wäre es 204).
+  Im Actions-Tab erscheint ein Lauf „Manually run by …“.
+
+Häufige Fehler: **401** – Schlüssel falsch kopiert oder `Bearer ` fehlt.
+**403/404** – Berechtigung „Actions: Read and write“ oder Repo-Auswahl fehlt.
+
+**Schlüssel erneuern:** Vor Ablauf einen neuen erstellen und bei cron-job.org
+ersetzen. Dabei auch prüfen, ob `X-GitHub-Api-Version` noch aktuell ist
+(GitHub-Doku „API Versions“).
+
+### Alternative: GitHubs eigener Zeitplan
+
+Ohne externen Dienst geht es auch: In `.github/workflows/update.yml` bei den
+beiden `schedule`-Zeilen das `#` entfernen, sodass der Anfang so aussieht:
+
+```yaml
+on:
+  schedule:
+    - cron: '7 * * * *'   # stündlich (UTC), Minute 7
+  workflow_dispatch:
+```
+
+Das braucht keinen Zugangsschlüssel und kein weiteres Konto, ist aber deutlich
+unzuverlässiger: GitHub verwirft viele geplante Läufe, in der Praxis kam nur
+etwa alle 4–5 Stunden einer an. Außerdem gilt dann die 60-Tage-Regel (siehe
+„Gut zu wissen“). Für einen groben Verlauf über Wochen reicht das trotzdem.
 
 ## Als App installieren
 
@@ -57,14 +119,8 @@ E-Control.
 - **Datenschutz:** Das Repo ist öffentlich. Statt der eigenen Wohnadresse lieber
   einen Punkt in der Nähe eintragen.
 
-Abrufintervall ändern: in `.github/workflows/update.yml` die `cron`-Zeile
-(Angabe in UTC).
-
 ## Gut zu wissen
 
-- **Geplante Läufe sind bei GitHub nicht pünktlich.** Sie kommen oft 15–60
-  Minuten später, gerade bei neuen Repos kann der erste geplante Lauf ein paar
-  Stunden dauern. Für den Verlauf macht das nichts.
 - **„Günstigster Preis je Ort“** ist der günstigste unter den rund 10 nächsten
   *geöffneten* Tankstellen. Nachts sind weniger offen, dann reicht der Kreis
   weiter hinaus – deshalb kann der Wert morgens steigen, ohne dass irgendwo der
@@ -74,8 +130,12 @@ Abrufintervall ändern: in `.github/workflows/update.yml` die `cron`-Zeile
   Abruf.
 - **Um Mitternacht** liefert E-Control kurz keine Preise. Seite und Abruf
   behalten dann einfach die letzten gültigen Daten.
-- **60 Tage ohne Aktivität:** GitHub kann geplante Workflows dann pausieren.
-  Falls der Verlauf stoppt, im Actions-Tab wieder aktivieren.
+- **60-Tage-Regel:** GitHub pausiert *geplante* Workflows in Repos ohne
+  Aktivität. Mit cron-job.org ist der Workflow nicht geplant, die Regel greift
+  also nicht. Mit GitHubs eigenem Zeitplan schon – falls der Verlauf stoppt,
+  den Workflow im Actions-Tab wieder aktivieren.
+- **YAML-Einrückung:** In `update.yml` zählen die Leerzeichen. Eine ungültige
+  Datei zeigt GitHub im Actions-Tab als „Invalid workflow file“ an.
 - Die Dateien in `data/` nicht von Hand bearbeiten.
 
 ## Lokal testen
